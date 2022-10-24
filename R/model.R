@@ -21,7 +21,7 @@ init <- function() {
     model@ldata <- rbind(model@ldata, x = nodes$x)
     model@ldata <- rbind(model@ldata, y = nodes$y)
 
-    save(model, FALSE)
+    save(model, FALSE, "model.sqlite")
 
     invisible(NULL)
 }
@@ -76,27 +76,16 @@ save <- function(model, append, path) {
 }
 
 step <- function(path) {
-    ## Step
-    con <- dbConnect(SQLite(), path)
-    dbWriteTable(con, "U", u0_SIR(), append = TRUE)
-    dbDisconnect(con)
+    ## Load model
+    model <- load()
 
-    con <- dbConnect(SQLite(), path)
-    dbReadTable(con, "U")
-    dbDisconnect(con)
+    ## Run one time-step
+
+    ## Save the outcome
+
+    invisible(NULL)
 }
 
 load <- function() {
-
-}
-
-model_step <- function(con) {
-    ## Step
-    con <- dbConnect(SQLite(), "model.sqlite")
-    dbWriteTable(con, "U", u0_SIR(), append = TRUE)
-    dbDisconnect(con)
-
-    con <- dbConnect(SQLite(), "model.sqlite")
-    dbReadTable(con, "U")
-    dbDisconnect(con)
+    NULL
 }
