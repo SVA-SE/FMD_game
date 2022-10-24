@@ -66,7 +66,7 @@ save <- function(model, append, path) {
 
 }
 
-model_step <- function(path) {
+step <- function(path) {
     ## Step
     con <- dbConnect(SQLite(), path)
     dbWriteTable(con, "U", u0_SIR(), append = TRUE)
@@ -77,13 +77,11 @@ model_step <- function(path) {
     dbDisconnect(con)
 }
 
-model_load <- function() {
+load <- function() {
 
 }
 
-
-<<<<<<< HEAD
-game_model_step <- function(con) {
+model_step <- function(con) {
     ## Step
     con <- dbConnect(SQLite(), "model.sqlite")
     dbWriteTable(con, "U", u0_SIR(), append = TRUE)
@@ -93,10 +91,3 @@ game_model_step <- function(con) {
     dbReadTable(con, "U")
     dbDisconnect(con)
 }
-=======
-
-
-
-model <- model_init()
-model_save(model, "model.sqlite")
->>>>>>> 55418d830fc92de138f626ccb7ec3a6fa65dd06e

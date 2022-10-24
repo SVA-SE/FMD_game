@@ -80,3 +80,10 @@ requirement to have an installed compiler.
   access to a temporary files location that is consistent between
   `model_step()` calls?
 - Model features? SIR? SEIR?  local spread? vaccination?
+
+## Example
+
+```R
+model <- init()
+save(model, "model.sqlite")
+```
