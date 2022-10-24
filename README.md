@@ -43,4 +43,26 @@ entry in the U table.
 Here we need the possibility to ask R to run the model one day from
 what is in the database file.
 
-##
+## Modal architecture.
+
+The model in R needs to be able to preform the tasks required to
+initialize the model and to step the model one day.
+
+### Initialize the model {model\_init()}
+
+This will consist of two steps
+
+1. Create a SimInf model object in R {model\_init()}
+2. Save the state of this model object in a database file {model\_save()}
+
+### Step the model {model\_step()}
+
+1. {model\_init()}
+2. Read the tables from the database and inject them into the
+   appropriate slots in the model object {model\_load()}
+3. Run the model forward one day {model\_step\_internal()}
+4. {model\_save()}
+
+An R package would be a good way to implement this as we can specify
+the dependencies on SimInf and RSQlite etc. We should have 2 exported
+functions: `model\_init` and `model\_step`.
