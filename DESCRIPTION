@@ -1,0 +1,26 @@
+Package: game.FMD
+Type: Package
+Title: Game Interface to the 'SimInf' Package for a FMD Model
+Version: 1.0
+Authors@R:
+    c(person(given = "Thomas",
+             family = "Rosendal",
+             role = c("aut", "cre"),
+             email = "thomas.rosendal@sva.se",
+             comment = c(ORCID = "0000-0002-6576-9668")),
+             person(given = "Stefan",
+             family = "Widgren",
+             role = c("aut"),
+             email = "stefan.widgren@sva.se",
+             comment = c(ORCID = "0000-0001-5745-2284")))
+Description: Provides a game interface to the 'SimInf' package for a
+    FMD model.
+License: GPL-3
+Imports:
+    methods,
+    RSQLite,
+    SimInf(>= 9.3.1)
+Collate:
+    'model.R'
+Encoding: UTF-8
+RoxygenNote: 7.2.1
