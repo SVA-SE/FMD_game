@@ -1,2 +1,3 @@
 ^README\.Rmd$
 ^Makefile$
+^model\.sqlite$
