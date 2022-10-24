@@ -1,10 +1,11 @@
 ##' Initialize an FMD model
 ##'
+##' @template dbname-param
 ##' @importFrom SimInf events_SIR
 ##' @importFrom SimInf u0_SIR
 ##' @importFrom SimInf SIR
 ##' @export
-init <- function() {
+init <- function(dbname = "./model.sqlite") {
     ## Create the initial population.
     u0 <- u0_SIR()
 
@@ -22,7 +23,7 @@ init <- function() {
     model@ldata <- rbind(model@ldata, x = SimInf::nodes$x)
     model@ldata <- rbind(model@ldata, y = SimInf::nodes$y)
 
-    save(model, FALSE, "model.sqlite")
+    save(model = model, append = FALSE, dbname = dbname)
 
     invisible(NULL)
 }
@@ -31,16 +32,16 @@ init <- function() {
 ##'
 ##' @param append if TRUE, append data to the database, else create
 ##'     (or overwrite) data in the database.
-##' @param path the path to the sqlite database.
+##' @template dbname-param
 ##' @importFrom RSQLite dbConnect
 ##' @importFrom RSQLite dbDisconnect
 ##' @importFrom RSQLite dbWriteTable
 ##' @importFrom RSQLite SQLite
 ##' @importFrom SimInf events
 ##' @noRd
-save <- function(model, append, path) {
+save <- function(model, append, dbname) {
     ## Open a database connection
-    con <- dbConnect(SQLite(), path)
+    con <- dbConnect(SQLite(), dbname = dbname)
     on.exit(expr = dbDisconnect(con), add = TRUE)
 
     ## Save the U state
@@ -81,7 +82,11 @@ save <- function(model, append, path) {
 
 }
 
-step <- function(path) {
+##' Simulate one time-step of the disease spread model
+##'
+##' @template dbname-param
+##' @export
+step <- function(dbname = "./model.sqlite") {
     ## Load model
     model <- load()
 
@@ -92,6 +97,10 @@ step <- function(path) {
     invisible(NULL)
 }
 
-load <- function() {
-    NULL
+##' Load the disease spread model from the database
+##'
+##' @template dbname-param
+##' @noRd
+load <- function(dbname) {
+    stop("Not implemented")
 }
