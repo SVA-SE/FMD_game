@@ -35,7 +35,7 @@ init <- function() {
 save <- function(model, append, path) {
     ## Open a database connection
     con <- dbConnect(SQLite(), path)
-    on.exit(expr = dbDisconnect(con))
+    on.exit(expr = dbDisconnect(con), add = TRUE)
 
     ## Save the U state
     if (isTRUE(append)) {
@@ -50,6 +50,12 @@ save <- function(model, append, path) {
     ## writing and then overwrite if true and append if false.
 
     ## Save ldata
+    ldata <- as.data.frame(t(model@ldata))
+    if (isTRUE(append)) {
+        dbWriteTable(con, "ldata", ldata, append = TRUE)
+    } else {
+        dbWriteTable(con, "ldata", ldata, overwrite = TRUE)
+    }
 
     gdata <- model@gdata
     dbWriteTable(con, "gdata", gdata, overwrite = TRUE)
