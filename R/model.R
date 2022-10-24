@@ -1,29 +1,49 @@
-library(RSQLite)
-library(SimInf)
-
-game_model_init <- function() {
+##' Initialize an FMD model
+##'
+##' @importFrom SimInf u0_SIR
+##' @importFrom SimInf SIR
+##' @export
+init <- function() {
+    ## Create the initial population.
     u0 <- u0_SIR()
+
+    ## Add one infected individual to the first node.
     u0$I[1] <- 1
-    tspan <- seq(from = 1, to = 4*365, by = 1)
-    SIR(u0     = u0,
-        tspan  = tspan,
-        events = events_SIR(),
-        beta   = 0.16,
-        gamma  = 0.01)
+
+    ## Create an SIR model.
+    model <- SIR(u0     = u0,
+                 tspan  = 1,
+                 events = events_SIR(),
+                 beta   = 0.16,
+                 gamma  = 0.01)
+
+    ## Add coordinates for the nodes to ldata.
+    model@ldata <- rbind(model@ldata, x = nodes$x)
+    model@ldata <- rbind(model@ldata, y = nodes$y)
+
+    save(model, FALSE)
+
+    invisible(NULL)
 }
 
-model <- game_model_init()
-
-
-game_model_save <- function(model) {
+##' Append or overwrite data in model.sqlite
+##'
+##' @param append if TRUE, append data to the database, else create
+##'     (or overwrite) data in the database.
+##' @noRd
+save <- function(model, append) {
     ## Open a database connection
     con <- dbConnect(SQLite(), "model.sqlite")
     on.exit(expr = dbDisconnect(con))
 
     ## Save the U state
-    U <- as.data.frame(t(model@u0))
-    U <- cbind(node = seq_len(nrow(U)), time = 0L, U)
-    dbWriteTable(con, "U", U, overwrite = TRUE)
+    if (isTRUE(append)) {
+        stop("Not implemented")
+    } else {
+        U <- as.data.frame(t(model@u0))
+        U <- cbind(node = seq_len(nrow(U)), time = 0L, U)
+        dbWriteTable(con, "U", U, overwrite = TRUE)
+    }
 
     ## TODO: We need to consider that to check if each is empty before
     ## writing and then overwrite if true and append if false.
@@ -36,12 +56,12 @@ game_model_save <- function(model) {
 
 
 game_model_step <- function(con) {
-## Step
-con <- dbConnect(SQLite(), "model.sqlite")
-dbWriteTable(con, "U", u0_SIR(), append = TRUE)
-dbDisconnect(con)
+    ## Step
+    con <- dbConnect(SQLite(), "model.sqlite")
+    dbWriteTable(con, "U", u0_SIR(), append = TRUE)
+    dbDisconnect(con)
 
-con <- dbConnect(SQLite(), "model.sqlite")
-dbReadTable(con, "U")
-dbDisconnect(con)
+    con <- dbConnect(SQLite(), "model.sqlite")
+    dbReadTable(con, "U")
+    dbDisconnect(con)
 }
