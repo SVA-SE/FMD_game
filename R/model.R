@@ -1,7 +1,7 @@
 library(RSQLite)
 library(SimInf)
 
-game_model_init <- function() {
+model_init <- function() {
     u0 <- u0_SIR()
     u0$I[1] <- 1
     tspan <- seq(from = 1, to = 4*365, by = 1)
@@ -12,12 +12,9 @@ game_model_init <- function() {
         gamma  = 0.01)
 }
 
-model <- game_model_init()
-
-
-game_model_save <- function(model) {
+model_save <- function(model, path) {
     ## Open a database connection
-    con <- dbConnect(SQLite(), "model.sqlite")
+    con <- dbConnect(SQLite(), path)
     on.exit(expr = dbDisconnect(con))
 
     ## Save the U state
@@ -28,20 +25,41 @@ game_model_save <- function(model) {
     ## TODO: We need to consider that to check if each is empty before
     ## writing and then overwrite if true and append if false.
 
+    ## Save ldata
+
     gdata <- model@gdata
     dbWriteTable(con, "gdata", gdata, overwrite = TRUE)
 
     ## TODO: If the gdata slot in the mode is empty what do we do?
+
+    ## Save v
+
+    ## Save events
+
+    ## Save shift
+
+    ## Save select
+
+}
+
+model_step <- function(path) {
+    ## Step
+    con <- dbConnect(SQLite(), path)
+    dbWriteTable(con, "U", u0_SIR(), append = TRUE)
+    dbDisconnect(con)
+
+    con <- dbConnect(SQLite(), path)
+    dbReadTable(con, "U")
+    dbDisconnect(con)
+}
+
+model_load <- function() {
+
 }
 
 
-game_model_step <- function(con) {
-## Step
-con <- dbConnect(SQLite(), "model.sqlite")
-dbWriteTable(con, "U", u0_SIR(), append = TRUE)
-dbDisconnect(con)
 
-con <- dbConnect(SQLite(), "model.sqlite")
-dbReadTable(con, "U")
-dbDisconnect(con)
-}
+
+
+model <- model_init()
+model_save(model, "model.sqlite")
