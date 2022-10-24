@@ -30,10 +30,11 @@ init <- function() {
 ##'
 ##' @param append if TRUE, append data to the database, else create
 ##'     (or overwrite) data in the database.
+##' @param path the path to the sqlite database.
 ##' @noRd
-save <- function(model, append) {
+save <- function(model, append, path) {
     ## Open a database connection
-    con <- dbConnect(SQLite(), "model.sqlite")
+    con <- dbConnect(SQLite(), path)
     on.exit(expr = dbDisconnect(con))
 
     ## Save the U state
@@ -48,13 +49,40 @@ save <- function(model, append) {
     ## TODO: We need to consider that to check if each is empty before
     ## writing and then overwrite if true and append if false.
 
+    ## Save ldata
+
     gdata <- model@gdata
     dbWriteTable(con, "gdata", gdata, overwrite = TRUE)
 
     ## TODO: If the gdata slot in the mode is empty what do we do?
+
+    ## Save v
+
+    ## Save events
+
+    ## Save shift
+
+    ## Save select
+
+}
+
+model_step <- function(path) {
+    ## Step
+    con <- dbConnect(SQLite(), path)
+    dbWriteTable(con, "U", u0_SIR(), append = TRUE)
+    dbDisconnect(con)
+
+    con <- dbConnect(SQLite(), path)
+    dbReadTable(con, "U")
+    dbDisconnect(con)
+}
+
+model_load <- function() {
+
 }
 
 
+<<<<<<< HEAD
 game_model_step <- function(con) {
     ## Step
     con <- dbConnect(SQLite(), "model.sqlite")
@@ -65,3 +93,10 @@ game_model_step <- function(con) {
     dbReadTable(con, "U")
     dbDisconnect(con)
 }
+=======
+
+
+
+model <- model_init()
+model_save(model, "model.sqlite")
+>>>>>>> 55418d830fc92de138f626ccb7ec3a6fa65dd06e
