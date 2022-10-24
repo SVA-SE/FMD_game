@@ -2,4 +2,5 @@
 
 export(init)
 importFrom(SimInf,SIR)
+importFrom(SimInf,events_SIR)
 importFrom(SimInf,u0_SIR)

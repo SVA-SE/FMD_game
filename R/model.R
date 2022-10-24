@@ -1,5 +1,6 @@
 ##' Initialize an FMD model
 ##'
+##' @importFrom SimInf events_SIR
 ##' @importFrom SimInf u0_SIR
 ##' @importFrom SimInf SIR
 ##' @export
