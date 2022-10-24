@@ -57,14 +57,17 @@ save <- function(model, append, path) {
         dbWriteTable(con, "ldata", ldata, overwrite = TRUE)
     }
 
-    gdata <- model@gdata
-    dbWriteTable(con, "gdata", gdata, overwrite = TRUE)
+    ## gdata <- model@gdata
+    ## dbWriteTable(con, "gdata", gdata, overwrite = TRUE)
 
     ## TODO: If the gdata slot in the mode is empty what do we do?
 
     ## Save v
 
     ## Save events
+    if (!isTRUE(append)) {
+        dbWriteTable(con, "events", as.data.frame(events(model)), overwrite = TRUE)
+    }
 
     ## Save shift
 
