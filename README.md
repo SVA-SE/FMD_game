@@ -65,4 +65,18 @@ This will consist of two steps
 
 An R package would be a good way to implement this as we can specify
 the dependencies on SimInf and RSQlite etc. We should have 2 exported
-functions: `model\_init` and `model\_step`.
+functions: `model\_init` and `model\_step`. An R package would also
+make it possible to ship the compiled model object to avoid the
+requirement to have an installed compiler.
+
+## Questions
+
+- Does an SQlite database work well to interact with from the game
+  side?
+- Do can we compile the model each time we `model_init()`
+- Will R be shipped in the binary with the game?
+- Do we want to consider keeping an R session 'alive' during the game
+  in order to avoid the overhead of started the process and have
+  access to a temporary files location that is consistent between
+  `model_step()` calls?
+- Model features? SIR? SEIR?  local spread? vaccination?
