@@ -2,7 +2,7 @@
 ##'
 ##' @template dbname-param
 ##' @importFrom SimInf events_SIR
-##' @importFrom Siminf n_nodes
+##' @importFrom SimInf n_nodes
 ##' @importFrom SimInf SIR
 ##' @importFrom SimInf u0_SIR
 ##' @export
@@ -37,6 +37,7 @@ init <- function(dbname = "./model.sqlite") {
 ##' @importFrom RSQLite dbDisconnect
 ##' @importFrom RSQLite dbWriteTable
 ##' @importFrom RSQLite SQLite
+##' @importFrom SimInf trajectory
 ##' @importFrom SimInf events
 ##' @noRd
 save <- function(model, dbname) {
@@ -46,7 +47,7 @@ save <- function(model, dbname) {
 
     ## Determine if the model is empty, then overwrite the data in the
     ## database, else append the data.
-    empty <- SimInf:::is_trajectory_empty(model)
+    empty <- identical(dim(model@U), c(0L, 0L))
 
     ## Save the U state
     if (isTRUE(empty)) {
@@ -54,15 +55,14 @@ save <- function(model, dbname) {
         U <- cbind(node = seq_len(nrow(U)), time = 0L, U)
         dbWriteTable(con, "U", U, overwrite = TRUE)
     } else {
-        stop("Not implemented")
+        U <- trajectory(model)
+        dbWriteTable(con, "U", U, append = TRUE)
     }
 
     ## Save ldata
     ldata <- as.data.frame(t(model@ldata))
     if (isTRUE(empty)) {
         dbWriteTable(con, "ldata", ldata, overwrite = TRUE)
-    } else {
-        dbWriteTable(con, "ldata", ldata, append = TRUE)
     }
 
     ## Save events
@@ -77,13 +77,12 @@ save <- function(model, dbname) {
 ##'
 ##' @template dbname-param
 ##' @export
-step <- function(dbname = "./model.sqlite") {
+run <- function(dbname = "./model.sqlite") {
     ## Load model
-    model <- load()
+    model <- load(dbname)
 
-    ## Run one time-step
-
-    ## Save the outcome
+    ## Run one time-step and save the outcome
+    save(SimInf::run(model), dbname = dbname)
 
     invisible(NULL)
 }
