@@ -55,9 +55,6 @@ save <- function(model, dbname) {
         stop("Not implemented")
     }
 
-    ## TODO: We need to consider that to check if each is empty before
-    ## writing and then overwrite if true and append if false.
-
     ## Save ldata
     ldata <- as.data.frame(t(model@ldata))
     if (isTRUE(empty)) {
@@ -66,22 +63,12 @@ save <- function(model, dbname) {
         dbWriteTable(con, "ldata", ldata, append = TRUE)
     }
 
-    ## gdata <- model@gdata
-    ## dbWriteTable(con, "gdata", gdata, overwrite = TRUE)
-
-    ## TODO: If the gdata slot in the mode is empty what do we do?
-
-    ## Save v
-
     ## Save events
     if (isTRUE(empty)) {
         dbWriteTable(con, "events", as.data.frame(events(model)), overwrite = TRUE)
     }
 
-    ## Save shift
-
-    ## Save select
-
+    invisible(NULL)
 }
 
 ##' Simulate one time-step of the disease spread model
