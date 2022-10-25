@@ -23,15 +23,13 @@ init <- function(dbname = "./model.sqlite") {
     model@ldata <- rbind(model@ldata, x = SimInf::nodes$x)
     model@ldata <- rbind(model@ldata, y = SimInf::nodes$y)
 
-    save(model = model, append = FALSE, dbname = dbname)
+    save(model = model, dbname = dbname)
 
     invisible(NULL)
 }
 
 ##' Append or overwrite data in model.sqlite
 ##'
-##' @param append if TRUE, append data to the database, else create
-##'     (or overwrite) data in the database.
 ##' @template dbname-param
 ##' @importFrom RSQLite dbConnect
 ##' @importFrom RSQLite dbDisconnect
@@ -39,18 +37,22 @@ init <- function(dbname = "./model.sqlite") {
 ##' @importFrom RSQLite SQLite
 ##' @importFrom SimInf events
 ##' @noRd
-save <- function(model, append, dbname) {
+save <- function(model, dbname) {
     ## Open a database connection
     con <- dbConnect(SQLite(), dbname = dbname)
     on.exit(expr = dbDisconnect(con), add = TRUE)
 
+    ## Determine if the model is empty, then overwrite the data in the
+    ## database, else append the data.
+    empty <- SimInf:::is_trajectory_empty(model)
+
     ## Save the U state
-    if (isTRUE(append)) {
-        stop("Not implemented")
-    } else {
+    if (isTRUE(empty)) {
         U <- as.data.frame(t(model@u0))
         U <- cbind(node = seq_len(nrow(U)), time = 0L, U)
         dbWriteTable(con, "U", U, overwrite = TRUE)
+    } else {
+        stop("Not implemented")
     }
 
     ## TODO: We need to consider that to check if each is empty before
@@ -58,10 +60,10 @@ save <- function(model, append, dbname) {
 
     ## Save ldata
     ldata <- as.data.frame(t(model@ldata))
-    if (isTRUE(append)) {
-        dbWriteTable(con, "ldata", ldata, append = TRUE)
-    } else {
+    if (isTRUE(empty)) {
         dbWriteTable(con, "ldata", ldata, overwrite = TRUE)
+    } else {
+        dbWriteTable(con, "ldata", ldata, append = TRUE)
     }
 
     ## gdata <- model@gdata
@@ -72,7 +74,7 @@ save <- function(model, append, dbname) {
     ## Save v
 
     ## Save events
-    if (!isTRUE(append)) {
+    if (isTRUE(empty)) {
         dbWriteTable(con, "events", as.data.frame(events(model)), overwrite = TRUE)
     }
 
