@@ -12,25 +12,23 @@ An SQlite database in a file that contains the following tables:
 - ldata, the covariates for each node in the model including
   geographical location of each node and perhaps the disease spread
   parameters if they are unique to each node.
-- gdata, the fixed disease spread parameters.
-- v, the continuous state(s) for each node and historical information
-  about this.
 - events, the current and historical events table.
-- shift, the shift matrix that defines valid events.
-- select, the select matrix. (These two matrices perhaps
-  should not be stored here, since it would be weird to change this
-  during the simulation?)
 
 ## Possible interactions
 
 ### Initialize model (game)
 
 We need to be able to ask for a clean starting state of the model when
-the game is started or restarted.
+the game is started or restarted. The following will initialize a
+model and save its relevant data to a database file "model.mysql":
+
+```sh
+Rscript -e "game.FMD::init('model.mysql')"
+```
 
 ### Query the model
 
-This will be by simply querying the database
+Query the database by whatever means you have to do that.
 
 ### Affect the model
 
@@ -41,49 +39,9 @@ entry in the U table.
 ### Step the model 1 day
 
 Here we need the possibility to ask R to run the model one day from
-what is in the database file.
+what is in the database file. You should run the following to step the
+model by one day:
 
-## Modal architecture.
-
-The model in R needs to be able to preform the tasks required to
-initialize the model and to step the model one day.
-
-### Initialize the model {model\_init()}
-
-This will consist of two steps
-
-1. Create a SimInf model object in R {model\_init()}
-2. Save the state of this model object in a database file {model\_save()}
-
-### Step the model {model\_step()}
-
-1. {model\_init()}
-2. Read the tables from the database and inject them into the
-   appropriate slots in the model object {model\_load()}
-3. Run the model forward one day {model\_step\_internal()}
-4. {model\_save()}
-
-An R package would be a good way to implement this as we can specify
-the dependencies on SimInf and RSQlite etc. We should have 2 exported
-functions: `model\_init` and `model\_step`. An R package would also
-make it possible to ship the compiled model object to avoid the
-requirement to have an installed compiler.
-
-## Questions
-
-- Does an SQlite database work well to interact with from the game
-  side?
-- Do can we compile the model each time we `model_init()`
-- Will R be shipped in the binary with the game?
-- Do we want to consider keeping an R session 'alive' during the game
-  in order to avoid the overhead of started the process and have
-  access to a temporary files location that is consistent between
-  `model_step()` calls?
-- Model features? SIR? SEIR?  local spread? vaccination?
-
-## Example
-
-```R
-model <- init()
-save(model, "model.sqlite")
+```sh
+Rscript -e "game.FMD::run('model.mysql')"
 ```
