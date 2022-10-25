@@ -30,7 +30,7 @@ the game is started or restarted. The following will initialize a
 model and save its relevant data to a database file "model.mysql":
 
 ```sh
-Rscript -e "game.FMD::init('model.mysql')"
+Rscript -e "game.FMD::init('model.sqlite')"
 ```
 
 ### Query the model
@@ -50,5 +50,5 @@ what is in the database file. You should run the following to step the
 model by one day:
 
 ```sh
-Rscript -e "game.FMD::run('model.mysql')"
+Rscript -e "game.FMD::run('model.sqlite')"
 ```
