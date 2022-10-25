@@ -18,6 +18,13 @@ An SQlite database in a file that contains the following tables:
 
 ### Initialize model (game)
 
+First install the package. You can do that with remotes:
+
+```sh
+Rscript -e "install.packages(remotes, repos = 'https://cloud.r-project.org/')"
+Rscript -e "remotes::install_github('SVA-SE/game.FMD')"
+```
+
 We need to be able to ask for a clean starting state of the model when
 the game is started or restarted. The following will initialize a
 model and save its relevant data to a database file "model.mysql":
