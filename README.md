@@ -21,7 +21,7 @@ An SQlite database in a file that contains the following tables:
 First install the package. You can do that with remotes:
 
 ```sh
-Rscript -e "install.packages(remotes, repos = 'https://cloud.r-project.org/')"
+Rscript -e "install.packages('remotes', repos = 'https://cloud.r-project.org/')"
 Rscript -e "remotes::install_github('SVA-SE/game.FMD')"
 ```
 
