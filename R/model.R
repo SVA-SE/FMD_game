@@ -100,7 +100,18 @@ step <- function(dbname = "./model.sqlite") {
 ##' Load the disease spread model from the database
 ##'
 ##' @template dbname-param
+##' @importFrom RSQLite dbConnect
+##' @importFrom RSQLite dbDisconnect
+##' @importFrom RSQLite dbReadTable
+##' @importFrom RSQLite dbListTables
+##' @importFrom RSQLite SQLite
 ##' @noRd
 load <- function(dbname) {
-    stop("Not implemented")
+    ## Open the database connection
+    con <- dbConnect(SQLite(), dbname = dbname)
+    on.exit(expr = dbDisconnect(con), add = TRUE)
+    tables <- dbListTables(con)
+    lapply(tables, function(x) {
+        dbReadTable(con, x)
+    })
 }
