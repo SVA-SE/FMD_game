@@ -60,8 +60,9 @@ save <- function(model, dbname) {
     }
 
     ## Save ldata
-    ldata <- as.data.frame(t(model@ldata))
     if (isTRUE(empty)) {
+        ldata <- as.data.frame(t(model@ldata))
+        ldata$node <- as.integer(ldata$node)
         dbWriteTable(con, "ldata", ldata, overwrite = TRUE)
     }
 
@@ -109,6 +110,7 @@ load <- function(dbname) {
 
     sql <- "SELECT * FROM ldata ORDER BY node;"
     ldata <- dbGetQuery(con, sql)
+    ldata$node <- as.numeric(ldata$node)
 
     sql <- "SELECT * FROM events WHERE time=:time;"
     events <- dbGetQuery(con, sql, params = c(time = time + 1))
