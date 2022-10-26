@@ -1,0 +1,9 @@
+# Binaries products
+bin
+bin-int
+
+# Visual Studio stuff
+.vs
+**.sln
+**.csproj
+ModelHandler/obj

@@ -27,7 +27,7 @@ Rscript -e "remotes::install_github('SVA-SE/game.FMD')"
 
 We need to be able to ask for a clean starting state of the model when
 the game is started or restarted. The following will initialize a
-model and save its relevant data to a database file "model.mysql":
+model and save its relevant data to a database file "model.sqlite":
 
 ```sh
 Rscript -e "game.FMD::init('model.sqlite')"
