@@ -8,10 +8,6 @@ mparse_model <- function() {
     path <- system.file("extdata/ldata.csv", package = "game.FMD")
     ldata <- read.csv(path)
 
-    ## Get u0 from package csv file
-    path <- system.file("extdata/u0.csv", package = "game.FMD")
-    u0 <- read.csv(path)
-
     ## Set the compartments in the model
     compartments <- c("S", "I", "R")
 
@@ -23,6 +19,6 @@ mparse_model <- function() {
     mparse(transitions = transitions,
            compartments = compartments,
            ldata = ldata,
-           u0 = u0,
+           u0 = create_u0(),
            tspan = 1)
 }

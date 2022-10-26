@@ -1,20 +1,26 @@
+##' Create the initial population.
+##' @importFrom SimInf u0_SIR
+##' @noRd
+create_u0 <- function() {
+    ## Load the test-population from SimInf.
+    u0 <- u0_SIR()
+
+    ## Add between 1--10 infected individuals to a random node.
+    u0$I[sample(seq_len(nrow(u0)), 1)] <- sample(1:10, 1)
+
+    u0
+}
+
 ##' Initialize an FMD model
 ##'
 ##' @template dbname-param
 ##' @importFrom SimInf events_SIR
 ##' @importFrom SimInf n_nodes
 ##' @importFrom SimInf SIR
-##' @importFrom SimInf u0_SIR
 ##' @export
 init <- function(dbname = "./model.sqlite") {
-    ## Create the initial population.
-    u0 <- u0_SIR()
-
-    ## Add one infected individual to the first node.
-    u0$I[1] <- 1
-
     ## Create an SIR model.
-    model <- SIR(u0     = u0,
+    model <- SIR(u0     = create_u0(),
                  tspan  = 1,
                  events = events_SIR(),
                  beta   = 0.16,
