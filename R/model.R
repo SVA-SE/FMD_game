@@ -18,7 +18,7 @@ init <- function(dbname = "./model.sqlite") {
                  tspan  = 1,
                  events = events_SIR(),
                  beta   = 0.16,
-                 gamma  = 0.01)
+                 gamma  = 0.077)
 
     ## Add coordinates for the nodes to ldata.
     model@ldata <- rbind(model@ldata, node = seq_len(n_nodes(model)))
