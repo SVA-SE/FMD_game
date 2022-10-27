@@ -4,3 +4,12 @@ Imports: methods, RSQLite, SimInf(>= 9.3.1)
 License: GPL-3
 MD5sum: 035eaf29477fb178ce375cd8994be572
 NeedsCompilation: no
+
+Package: game.FMD
+Version: 1.1
+Depends: R (>= 3.5.0)
+Imports: methods, RSQLite, SimInf(>= 9.3.1)
+LinkingTo: SimInf
+License: GPL-3
+MD5sum: 082c2ef39439880b05104c1d5a58e6d1
+NeedsCompilation: yes
