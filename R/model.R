@@ -84,12 +84,16 @@ save <- function(model, dbname) {
 ##'
 ##' @template dbname-param
 ##' @export
+##' @useDynLib game.FMD, .registration=TRUE
 run <- function(dbname = "./model.sqlite") {
     ## Load model
     model <- load(dbname)
 
     ## Run one time-step and save the outcome
-    save(SimInf::run(model), dbname = dbname)
+    validObject(model)
+    result <- .Call(game_FMD_run, model, "ssm")
+
+    save(result, dbname = dbname)
 
     invisible(NULL)
 }

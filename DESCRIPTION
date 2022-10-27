@@ -20,6 +20,7 @@ Imports:
     methods,
     RSQLite,
     SimInf(>= 9.3.1)
+LinkingTo: SimInf
 Collate:
     'model.R'
     'mparse_model.R'

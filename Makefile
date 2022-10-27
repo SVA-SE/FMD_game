@@ -18,7 +18,7 @@ roxygen:
 
 # Build package
 .PHONY: build
-build:
+build: clean
 	cd .. && R CMD build $(PKG_NAME)
 
 # Check package
@@ -33,3 +33,7 @@ release: build
 	cd .. && Rscript -e "drat::insertPackage(file='$(PKG_TAR)', location='docs', repodir='game.FMD')"
 	cd .. && R CMD INSTALL --build $(PKG_NAME)
 	cd .. && Rscript -e "drat::insertPackage(file='$(PKG_ZIP)', location='docs', repodir='game.FMD')"
+
+.PHONY: clean
+clean:
+	./cleanup

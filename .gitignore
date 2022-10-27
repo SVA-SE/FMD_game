@@ -1,1 +1,3 @@
 /model.sqlite
+*.so
+*.o
