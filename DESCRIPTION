@@ -23,6 +23,5 @@ Imports:
 LinkingTo: SimInf
 Collate:
     'model.R'
-    'mparse_model.R'
 Encoding: UTF-8
 RoxygenNote: 7.2.1
