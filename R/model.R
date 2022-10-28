@@ -11,6 +11,15 @@ create_u0 <- function() {
     u0
 }
 
+##' Power-law kernel for the interaction between populations
+##'
+##' @param d distance in meters between populations
+##' @param k spatial kernel scaling parameter.
+##' @noRd
+K_d_ij <- function(d, k) {
+    1 / (1 + (d/1000)^k)
+}
+
 ##' Initialize an FMD model
 ##'
 ##' @template dbname-param
