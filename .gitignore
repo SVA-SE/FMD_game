@@ -1,3 +1,4 @@
 /model.sqlite
 *.so
 *.o
+*.dll
