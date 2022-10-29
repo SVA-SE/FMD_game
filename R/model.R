@@ -92,6 +92,7 @@ save <- function(model, dbname) {
 ##' Simulate one time-step of the disease spread model
 ##'
 ##' @template dbname-param
+##' @importFrom methods validObject
 ##' @export
 ##' @useDynLib game.FMD, .registration=TRUE
 run <- function(dbname = "./model.sqlite") {
