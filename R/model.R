@@ -1,6 +1,17 @@
 ##' Create local node data for the model.
+##'
+##' @param db A DBIConnection object, as returned by
+##'     dbConnect(). Default is NULL, i.e., to create a new ldata
+##'     object.
 ##' @noRd
-create_ldata <- function() {
+create_ldata <- function(db = NULL) {
+    if (!is.null(db)) {
+        ldata <- dbGetQuery(db, "SELECT * FROM ldata ORDER BY node;")
+        ldata$node <- as.numeric(ldata$node)
+        ldata <- t(as.matrix(ldata))
+        return(ldata)
+    }
+
     ldata <- matrix(c(
         rep(0.16, nrow(SimInf::nodes)), ## beta
         rep(0.77, nrow(SimInf::nodes)), ## gamma
@@ -179,10 +190,6 @@ load <- function(dbname) {
     sql <- "SELECT * FROM U WHERE time=:time ORDER BY node;"
     u0 <- dbGetQuery(con, sql, params = c(time = time))
 
-    sql <- "SELECT * FROM ldata ORDER BY node;"
-    ldata <- dbGetQuery(con, sql)
-    ldata$node <- as.numeric(ldata$node)
-
     sql <- "SELECT * FROM events WHERE time=:time;"
     events <- dbGetQuery(con, sql, params = c(time = time + 1))
 
@@ -194,7 +201,7 @@ load <- function(dbname) {
                  beta   = 0,
                  gamma  = 0)
 
-    model@ldata <- t(as.matrix(ldata))
+    model@ldata <- create_ldata(con)
 
     model
 }
