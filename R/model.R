@@ -1,8 +1,19 @@
+##'  Create events for the model
+##'
+##' @template db-param
+##' @noRd
+create_events <- function(db = NULL) {
+    if (!is.null(db)) {
+        sql <- "SELECT * FROM events WHERE time=(SELECT MAX(time) + 1 FROM U);"
+        return(dbGetQuery(db, sql))
+    }
+
+    events_SIR()
+}
+
 ##' Create local node data for the model.
 ##'
-##' @param db A DBIConnection object, as returned by
-##'     dbConnect(). Default is NULL, i.e., to create a new ldata
-##'     object.
+##' @template db-param
 ##' @importFrom SimInf distance_matrix
 ##' @importFrom stats uniroot
 ##' @noRd
