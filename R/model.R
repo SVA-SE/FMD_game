@@ -62,6 +62,49 @@ create_ldata <- function(db = NULL) {
     ldata
 }
 
+##' Create a SimInf_model object.
+##' @importFrom SimInf SimInf_model
+##' @noRd
+create_model <- function() {
+    transitions <- c("S -> beta*S*I/(S+I+R) -> I",
+                     "I -> gamma*I -> R")
+    compartments <- c("S", "I", "R")
+
+    E <- matrix(c(
+        1, 0, 0, 1,  ## S
+        0, 1, 0, 1,  ## I
+        0, 0, 1, 1), ## R
+        nrow = length(compartments),
+        byrow = TRUE,
+        dimnames = list(compartments, NULL))
+
+    G <- matrix(c(
+        1, 1,  ## S -> beta*S*I/(S+I+R) -> I
+        1, 1), ## I -> gamma*I -> R
+        nrow = length(transitions),
+        byrow = TRUE,
+        dimnames = list(transitions, NULL))
+
+    S <- matrix(c(
+        -1, 1,  ## S
+         0, 0,  ## I
+        -1, 1), ## R
+        nrow = length(compartments),
+        byrow = TRUE,
+        dimnames = list(compartments, NULL))
+
+    tspan <- 1
+
+    SimInf_model(
+        G      = G,
+        S      = S,
+        E      = E,
+        tspan  = tspan,
+        events = events_SIR(),
+        ldata  = create_ldata(),
+        u0     = create_u0())
+}
+
 ##' Create the initial population.
 ##' @importFrom SimInf u0_SIR
 ##' @noRd
@@ -88,24 +131,10 @@ K_d_ij <- function(d, k) {
 ##'
 ##' @template dbname-param
 ##' @importFrom SimInf events_SIR
-##' @importFrom SimInf n_nodes
-##' @importFrom SimInf SIR
 ##' @export
 init <- function(dbname = "./model.sqlite") {
-    ## Create an SIR model.
-    model <- SIR(u0     = create_u0(),
-                 tspan  = 1,
-                 events = events_SIR(),
-                 beta   = 0.16,
-                 gamma  = 0.077)
-
-    ## Add coordinates for the nodes to ldata.
-    model@ldata <- rbind(model@ldata, node = seq_len(n_nodes(model)))
-    model@ldata <- rbind(model@ldata, x = SimInf::nodes$x)
-    model@ldata <- rbind(model@ldata, y = SimInf::nodes$y)
-
+    model <- create_model()
     save(model = model, dbname = dbname)
-
     invisible(NULL)
 }
 
