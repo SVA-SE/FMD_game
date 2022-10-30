@@ -3,6 +3,7 @@
 ##' @param db A DBIConnection object, as returned by
 ##'     dbConnect(). Default is NULL, i.e., to create a new ldata
 ##'     object.
+##' @importFrom SimInf distance_matrix
 ##' @noRd
 create_ldata <- function(db = NULL) {
     if (!is.null(db)) {
