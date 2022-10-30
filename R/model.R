@@ -1,3 +1,54 @@
+##' Create local node data for the model.
+##' @noRd
+create_ldata <- function() {
+    ldata <- matrix(c(
+        rep(0.16, nrow(SimInf::nodes)), ## beta
+        rep(0.77, nrow(SimInf::nodes)), ## gamma
+        seq_len(nrow(SimInf::nodes)),   ## node
+        SimInf::nodes$x,                ## x
+        SimInf::nodes$y),               ## y
+        nrow = 5,
+        byrow = TRUE,
+        dimnames = list(c("beta", "gamma", "node", "x", "y"), NULL))
+
+    ## Determine the cutoff for the distance (in meters) for when to
+    ## inlude the interaction from neighbours.
+    k <- 1.76
+    cutoff <- uniroot(f = function(d, k) {
+        K_d_ij(d, k) - 0.01
+    }, interval = c(0, 1e5), k = k)$root
+
+    distance <- distance_matrix(ldata["x", ], ldata["y", ], cutoff = cutoff)
+
+    ## Now we need to re-structure the distance matrix to local data
+    ## available to each node. The reason for this is that every node
+    ## needs to know the index (node identifier) and the spatial
+    ## coupling to all its neigboring nodes. We keep the information
+    ## for each node in a vector with two values for every neighbour:
+    ## (index, distance), (index, distance), ..., (-1, 0). Each vector
+    ## is stored as one column in the ldata matrix. For this
+    ## re-structuring, we will use an internal function in SimInf.
+    rownames_ldata <- rownames(ldata)
+    ldata <- .Call(SimInf:::SimInf_ldata_sp, ldata, distance, 1L)
+    n_neighbours <- (nrow(ldata) - length(rownames_ldata)) / 2
+    rownames(ldata) <- c(
+        rownames_ldata,
+        paste0(c("index", "coupling"), rep(seq_len(n_neighbours), each = 2)))
+
+    ## Recalculate the distance to a coupling.
+    for (j in seq_len(ncol(ldata))) {
+        i <- length(rownames_ldata) + 1
+        repeat {
+            if (ldata[i, j] < 0)
+                break
+            ldata[i + 1, j] <- K_d_ij(ldata[i + 1, j], k)
+            i <- i + 2
+        }
+    }
+
+    ldata
+}
+
 ##' Create the initial population.
 ##' @importFrom SimInf u0_SIR
 ##' @noRd
