@@ -1,6 +1,7 @@
 ##'  Create events for the model
 ##'
 ##' @template db-param
+##' @importFrom SimInf events_SIR
 ##' @noRd
 create_events <- function(db = NULL) {
     if (!is.null(db)) {
@@ -19,10 +20,7 @@ create_events <- function(db = NULL) {
 ##' @noRd
 create_ldata <- function(db = NULL) {
     if (!is.null(db)) {
-        ldata <- dbGetQuery(db, "SELECT * FROM ldata ORDER BY node;")
-        ldata$node <- as.numeric(ldata$node)
-        ldata <- t(as.matrix(ldata))
-        return(ldata)
+        return(dbGetQuery(db, "SELECT * FROM ldata ORDER BY node;"))
     }
 
     ldata <- matrix(c(
@@ -74,9 +72,11 @@ create_ldata <- function(db = NULL) {
 }
 
 ##' Create a SimInf_model object.
+##'
+##' @template db-param
 ##' @importFrom SimInf SimInf_model
 ##' @noRd
-create_model <- function() {
+create_model <- function(db = NULL) {
     transitions <- c("S -> beta*S*I/(S+I+R) -> I",
                      "I -> gamma*I -> R")
     compartments <- c("S", "I", "R")
@@ -104,22 +104,42 @@ create_model <- function() {
         byrow = TRUE,
         dimnames = list(compartments, NULL))
 
-    tspan <- 1
-
     SimInf_model(
         G      = G,
         S      = S,
         E      = E,
-        tspan  = tspan,
-        events = events_SIR(),
-        ldata  = create_ldata(),
-        u0     = create_u0())
+        tspan  = create_tspan(db),
+        events = create_events(db),
+        ldata  = create_ldata(db),
+        u0     = create_u0(db))
 }
 
-##' Create the initial population.
+##' Create tspan for the model
+##'
+##' @template db-param
+##' @noRd
+create_tspan <- function(db = NULL) {
+    if (!is.null(db)) {
+        sql <- "SELECT MAX(time) + 1 FROM U;"
+        return(as.numeric(dbGetQuery(db, sql)))
+    }
+
+    1
+}
+
+##' Create the initial population
+##'
+##' @template db-param
 ##' @importFrom SimInf u0_SIR
 ##' @noRd
-create_u0 <- function() {
+create_u0 <- function(db = NULL) {
+    if (!is.null(db)) {
+        sql <- "SELECT * FROM U WHERE time=(SELECT max(time) FROM U) ORDER BY node;"
+        u0 <- dbGetQuery(db, sql)
+        u0 <- u0[, -match(c("node", "time"), colnames(u0)), drop = FALSE]
+        return(u0)
+    }
+
     ## Load the test-population from SimInf.
     u0 <- u0_SIR()
 
@@ -141,7 +161,6 @@ K_d_ij <- function(d, k) {
 ##' Initialize an FMD model
 ##'
 ##' @template dbname-param
-##' @importFrom SimInf events_SIR
 ##' @export
 init <- function(dbname = "./model.sqlite") {
     model <- create_model()
@@ -219,31 +238,10 @@ run <- function(dbname = "./model.sqlite") {
 ##' @importFrom RSQLite dbDisconnect
 ##' @importFrom RSQLite SQLite
 ##' @importFrom RSQLite dbGetQuery
-##' @importFrom SimInf SIR
 ##' @noRd
 load <- function(dbname) {
     ## Open the database connection
     con <- dbConnect(SQLite(), dbname = dbname)
     on.exit(expr = dbDisconnect(con), add = TRUE)
-
-    sql <- "SELECT time FROM U WHERE time=(SELECT max(time) FROM U) LIMIT 1"
-    time <- as.numeric(dbGetQuery(con, sql))
-
-    sql <- "SELECT * FROM U WHERE time=:time ORDER BY node;"
-    u0 <- dbGetQuery(con, sql, params = c(time = time))
-
-    sql <- "SELECT * FROM events WHERE time=:time;"
-    events <- dbGetQuery(con, sql, params = c(time = time + 1))
-
-    ## Create an SIR model. Note that beta and gamma will be replaced
-    ## when ldata is injected.
-    model <- SIR(u0     = u0,
-                 tspan  = time + 1,
-                 events = events,
-                 beta   = 0,
-                 gamma  = 0)
-
-    model@ldata <- create_ldata(con)
-
-    model
+    create_model(con)
 }
