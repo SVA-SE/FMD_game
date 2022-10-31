@@ -175,8 +175,42 @@ K_d_ij <- function(d, k) {
 ##' @export
 init <- function(dbname = "./model.sqlite") {
     model <- create_model()
-    save(model = model, dbname = dbname)
+    dbWriteModel(model = model, dbname = dbname)
     invisible(NULL)
+}
+
+##' Simulate one time-step of the disease spread model
+##'
+##' @template dbname-param
+##' @importFrom methods validObject
+##' @export
+##' @useDynLib game.FMD, .registration=TRUE
+run <- function(dbname = "./model.sqlite") {
+    ## Load model
+    model <- dbReadModel(dbname)
+
+    ## Run one time-step and save the outcome
+    validObject(model)
+    result <- .Call(game_FMD_run, model, "ssm")
+
+    dbWriteModel(result, dbname = dbname)
+
+    invisible(NULL)
+}
+
+##' Load the disease spread model from the database
+##'
+##' @template dbname-param
+##' @importFrom RSQLite dbConnect
+##' @importFrom RSQLite dbDisconnect
+##' @importFrom RSQLite SQLite
+##' @importFrom RSQLite dbGetQuery
+##' @export
+dbReadModel <- function(dbname = "./model.sqlite") {
+    ## Open the database connection
+    con <- dbConnect(SQLite(), dbname = dbname)
+    on.exit(expr = dbDisconnect(con), add = TRUE)
+    create_model(con)
 }
 
 ##' Append or overwrite data in model.sqlite
@@ -189,7 +223,7 @@ init <- function(dbname = "./model.sqlite") {
 ##' @importFrom SimInf trajectory
 ##' @importFrom SimInf events
 ##' @noRd
-save <- function(model, dbname) {
+dbWriteModel <- function(model, dbname) {
     ## Open a database connection
     con <- dbConnect(SQLite(), dbname = dbname)
     on.exit(expr = dbDisconnect(con), add = TRUE)
@@ -222,38 +256,4 @@ save <- function(model, dbname) {
     }
 
     invisible(NULL)
-}
-
-##' Simulate one time-step of the disease spread model
-##'
-##' @template dbname-param
-##' @importFrom methods validObject
-##' @export
-##' @useDynLib game.FMD, .registration=TRUE
-run <- function(dbname = "./model.sqlite") {
-    ## Load model
-    model <- dbReadModel(dbname)
-
-    ## Run one time-step and save the outcome
-    validObject(model)
-    result <- .Call(game_FMD_run, model, "ssm")
-
-    save(result, dbname = dbname)
-
-    invisible(NULL)
-}
-
-##' Load the disease spread model from the database
-##'
-##' @template dbname-param
-##' @importFrom RSQLite dbConnect
-##' @importFrom RSQLite dbDisconnect
-##' @importFrom RSQLite SQLite
-##' @importFrom RSQLite dbGetQuery
-##' @export
-dbReadModel <- function(dbname = "./model.sqlite") {
-    ## Open the database connection
-    con <- dbConnect(SQLite(), dbname = dbname)
-    on.exit(expr = dbDisconnect(con), add = TRUE)
-    create_model(con)
 }
