@@ -111,7 +111,8 @@ create_model <- function(db = NULL) {
         tspan  = create_tspan(db),
         events = create_events(db),
         ldata  = create_ldata(db),
-        u0     = create_u0(db))
+        u0     = create_u0(db),
+        v0     = create_v0(db))
 }
 
 ##' Create tspan for the model
@@ -136,7 +137,7 @@ create_u0 <- function(db = NULL) {
     if (!is.null(db)) {
         sql <- "SELECT * FROM U WHERE time=(SELECT max(time) FROM U) ORDER BY node;"
         u0 <- dbGetQuery(db, sql)
-        u0 <- u0[, -match(c("node", "time"), colnames(u0)), drop = FALSE]
+        u0 <- u0[, -match(c("node", "time", "I_coupling"), colnames(u0)), drop = FALSE]
         return(u0)
     }
 
@@ -147,6 +148,16 @@ create_u0 <- function(db = NULL) {
     u0$I[sample(seq_len(nrow(u0)), 1)] <- sample(1:10, 1)
 
     u0
+}
+
+create_v0 <- function(db = NULL) {
+    if (!is.null(db)) {
+        sql <- "SELECT I_coupling FROM U WHERE time=(SELECT max(time) FROM U) ORDER BY node;"
+        v0 <- dbGetQuery(db, sql)
+        return(v0)
+    }
+
+    data.frame(I_coupling = rep(0, nrow(create_u0())))
 }
 
 ##' Power-law kernel for the interaction between populations
@@ -190,6 +201,7 @@ save <- function(model, dbname) {
     ## Save the U state
     if (isTRUE(empty)) {
         U <- as.data.frame(t(model@u0))
+        U <- cbind(U, as.data.frame(t(model@v0)))
         U <- cbind(node = seq_len(nrow(U)), time = 0L, U)
         dbWriteTable(con, "U", U, overwrite = TRUE)
     } else {
