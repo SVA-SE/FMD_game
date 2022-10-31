@@ -97,9 +97,9 @@ create_model <- function(db = NULL) {
         dimnames = list(transitions, NULL))
 
     S <- matrix(c(
-        -1, 1,  ## S
-         0, 0,  ## I
-        -1, 1), ## R
+        -1,  0,  ## S
+         1, -1,  ## I
+         0,  1), ## R
         nrow = length(compartments),
         byrow = TRUE,
         dimnames = list(compartments, NULL))
