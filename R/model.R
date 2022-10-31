@@ -24,11 +24,11 @@ create_ldata <- function(db = NULL) {
     }
 
     ldata <- matrix(c(
-        rep(0.16, nrow(SimInf::nodes)), ## beta
-        rep(0.77, nrow(SimInf::nodes)), ## gamma
-        seq_len(nrow(SimInf::nodes)),   ## node
-        SimInf::nodes$x,                ## x
-        SimInf::nodes$y),               ## y
+        rep(0.16, nrow(SimInf::nodes)),  ## beta
+        rep(0.077, nrow(SimInf::nodes)), ## gamma
+        seq_len(nrow(SimInf::nodes)),    ## node
+        SimInf::nodes$x,                 ## x
+        SimInf::nodes$y),                ## y
         nrow = 5,
         byrow = TRUE,
         dimnames = list(c("beta", "gamma", "node", "x", "y"), NULL))
