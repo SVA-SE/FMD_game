@@ -232,7 +232,7 @@ save <- function(model, dbname) {
 ##' @useDynLib game.FMD, .registration=TRUE
 run <- function(dbname = "./model.sqlite") {
     ## Load model
-    model <- load(dbname)
+    model <- dbReadModel(dbname)
 
     ## Run one time-step and save the outcome
     validObject(model)
@@ -250,8 +250,8 @@ run <- function(dbname = "./model.sqlite") {
 ##' @importFrom RSQLite dbDisconnect
 ##' @importFrom RSQLite SQLite
 ##' @importFrom RSQLite dbGetQuery
-##' @noRd
-load <- function(dbname) {
+##' @export
+dbReadModel <- function(dbname = "./model.sqlite") {
     ## Open the database connection
     con <- dbConnect(SQLite(), dbname = dbname)
     on.exit(expr = dbDisconnect(con), add = TRUE)
