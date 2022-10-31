@@ -6,7 +6,7 @@ side.
 
 ## The database
 
-An SQlite database in a file that contains the following tables:
+An SQLite database in a file that contains the following tables:
 
 - U, the current and historical state of all nodes in the model.
 - ldata, the covariates for each node in the model including
@@ -18,16 +18,16 @@ An SQlite database in a file that contains the following tables:
 
 ### Initialize model (game)
 
-First install the package. You can do that with remotes:
+First install the latest version of the package:
 
 ```sh
-Rscript -e "install.packages('remotes', repos = 'https://cloud.r-project.org/')"
-Rscript -e "remotes::install_github('SVA-SE/game.FMD')"
+Rscript -e "install.packages('game.FMD', repos='https://SVA-SE.github.io/game.FMD')"
 ```
 
 We need to be able to ask for a clean starting state of the model when
 the game is started or restarted. The following will initialize a
-model and save its relevant data to a database file "model.sqlite":
+model and save its relevant data to a database file "model.sqlite" in
+the current directory:
 
 ```sh
 Rscript -e "game.FMD::init('model.sqlite')"

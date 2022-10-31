@@ -1,0 +1,11 @@
+Package: game.FMD
+Version: 1.0
+Imports: methods, RSQLite, SimInf(>= 9.3.1)
+License: GPL-3
+
+Package: game.FMD
+Version: 1.1
+Imports: methods, RSQLite, SimInf(>= 9.3.1)
+LinkingTo: SimInf
+License: GPL-3
+Archs: x64

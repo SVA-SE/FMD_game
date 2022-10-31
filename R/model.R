@@ -1,24 +1,39 @@
+##' Create the initial population.
+##' @importFrom SimInf u0_SIR
+##' @noRd
+create_u0 <- function() {
+    ## Load the test-population from SimInf.
+    u0 <- u0_SIR()
+
+    ## Add between 1--10 infected individuals to a random node.
+    u0$I[sample(seq_len(nrow(u0)), 1)] <- sample(1:10, 1)
+
+    u0
+}
+
+##' Power-law kernel for the interaction between populations
+##'
+##' @param d distance in meters between populations
+##' @param k spatial kernel scaling parameter.
+##' @noRd
+K_d_ij <- function(d, k) {
+    1 / (1 + (d/1000)^k)
+}
+
 ##' Initialize an FMD model
 ##'
 ##' @template dbname-param
 ##' @importFrom SimInf events_SIR
 ##' @importFrom SimInf n_nodes
 ##' @importFrom SimInf SIR
-##' @importFrom SimInf u0_SIR
 ##' @export
 init <- function(dbname = "./model.sqlite") {
-    ## Create the initial population.
-    u0 <- u0_SIR()
-
-    ## Add one infected individual to the first node.
-    u0$I[1] <- 1
-
     ## Create an SIR model.
-    model <- SIR(u0     = u0,
+    model <- SIR(u0     = create_u0(),
                  tspan  = 1,
                  events = events_SIR(),
                  beta   = 0.16,
-                 gamma  = 0.01)
+                 gamma  = 0.077)
 
     ## Add coordinates for the nodes to ldata.
     model@ldata <- rbind(model@ldata, node = seq_len(n_nodes(model)))
@@ -60,8 +75,9 @@ save <- function(model, dbname) {
     }
 
     ## Save ldata
-    ldata <- as.data.frame(t(model@ldata))
     if (isTRUE(empty)) {
+        ldata <- as.data.frame(t(model@ldata))
+        ldata$node <- as.integer(ldata$node)
         dbWriteTable(con, "ldata", ldata, overwrite = TRUE)
     }
 
@@ -77,12 +93,16 @@ save <- function(model, dbname) {
 ##'
 ##' @template dbname-param
 ##' @export
+##' @useDynLib game.FMD, .registration=TRUE
 run <- function(dbname = "./model.sqlite") {
     ## Load model
     model <- load(dbname)
 
     ## Run one time-step and save the outcome
-    save(SimInf::run(model), dbname = dbname)
+    validObject(model)
+    result <- .Call(game_FMD_run, model, "ssm")
+
+    save(result, dbname = dbname)
 
     invisible(NULL)
 }
@@ -109,6 +129,7 @@ load <- function(dbname) {
 
     sql <- "SELECT * FROM ldata ORDER BY node;"
     ldata <- dbGetQuery(con, sql)
+    ldata$node <- as.numeric(ldata$node)
 
     sql <- "SELECT * FROM events WHERE time=:time;"
     events <- dbGetQuery(con, sql, params = c(time = time + 1))
