@@ -21,3 +21,11 @@ LinkingTo: SimInf
 License: GPL-3
 MD5sum: 0188d15666b4028c45e501c27765661c
 NeedsCompilation: yes
+
+Package: game.FMD
+Version: 2.1
+Imports: methods, RSQLite, SimInf(>= 9.3.1), stats
+LinkingTo: SimInf
+License: GPL-3
+MD5sum: 26e51ef978ea1412e9c9f1865d5abcbf
+NeedsCompilation: yes
