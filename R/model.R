@@ -172,8 +172,10 @@ K_d_ij <- function(d, k) {
 ##' Initialize an FMD model
 ##'
 ##' @template dbname-param
+##' @param beta the transmission rate parameter.
+##' @param gamma the recovery rate parameter.
 ##' @export
-init <- function(dbname = "./model.sqlite") {
+init <- function(dbname = "./model.sqlite", beta = 0.0001, gamma = 0.077) {
     model <- create_model()
     dbWriteModel(model = model, dbname = dbname)
     invisible(NULL)

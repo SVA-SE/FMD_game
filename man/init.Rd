@@ -4,11 +4,15 @@
 \alias{init}
 \title{Initialize an FMD model}
 \usage{
-init(dbname = "./model.sqlite")
+init(dbname = "./model.sqlite", beta = 0.05, gamma = 0.077)
 }
 \arguments{
 \item{dbname}{The path to the database file. Default is
 './model.sqlite'.}
+
+\item{beta}{the transmission rate parameter.}
+
+\item{gamma}{the recovery rate parameter.}
 }
 \description{
 Initialize an FMD model
