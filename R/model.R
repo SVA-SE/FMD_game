@@ -18,14 +18,14 @@ create_events <- function(db = NULL) {
 ##' @importFrom SimInf distance_matrix
 ##' @importFrom stats uniroot
 ##' @noRd
-create_ldata <- function(db = NULL) {
+create_ldata <- function(db = NULL, beta, gamma) {
     if (!is.null(db)) {
         return(dbGetQuery(db, "SELECT * FROM ldata ORDER BY node;"))
     }
 
     ldata <- matrix(c(
-        rep(0.16, nrow(SimInf::nodes)),  ## beta
-        rep(0.077, nrow(SimInf::nodes)), ## gamma
+        rep(beta, nrow(SimInf::nodes)),  ## beta
+        rep(gamma, nrow(SimInf::nodes)), ## gamma
         seq_len(nrow(SimInf::nodes)),    ## node
         SimInf::nodes$x,                 ## x
         SimInf::nodes$y),                ## y
@@ -76,7 +76,7 @@ create_ldata <- function(db = NULL) {
 ##' @template db-param
 ##' @importFrom SimInf SimInf_model
 ##' @noRd
-create_model <- function(db = NULL) {
+create_model <- function(db = NULL, beta, gamma) {
     transitions <- c("S -> beta*S*I/(S+I+R) -> I",
                      "I -> gamma*I -> R")
     compartments <- c("S", "I", "R")
@@ -110,7 +110,7 @@ create_model <- function(db = NULL) {
         E      = E,
         tspan  = create_tspan(db),
         events = create_events(db),
-        ldata  = create_ldata(db),
+        ldata  = create_ldata(db, beta, gamma),
         u0     = create_u0(db),
         v0     = create_v0(db))
 }
@@ -175,8 +175,8 @@ K_d_ij <- function(d, k) {
 ##' @param beta the transmission rate parameter.
 ##' @param gamma the recovery rate parameter.
 ##' @export
-init <- function(dbname = "./model.sqlite", beta = 0.0001, gamma = 0.077) {
-    model <- create_model()
+init <- function(dbname = "./model.sqlite", beta = 0.005, gamma = 0.077) {
+    model <- create_model(NULL, beta, gamma)
     dbWriteModel(model = model, dbname = dbname)
     invisible(NULL)
 }
