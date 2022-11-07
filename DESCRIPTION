@@ -1,7 +1,7 @@
 Package: game.FMD
 Type: Package
 Title: Game Interface to the 'SimInf' Package for a FMD Model
-Version: 2.1
+Version: 2.2
 Authors@R:
     c(person(given = "Thomas",
              family = "Rosendal",
