@@ -2,3 +2,4 @@
 ^Makefile$
 ^model\.sqlite$
 ^man-roxygen$
+^docs$

@@ -1,7 +1,146 @@
-##' Create the initial population.
+##'  Create events for the model
+##'
+##' @template db-param
+##' @importFrom SimInf events_SIR
+##' @noRd
+create_events <- function(db = NULL) {
+    if (!is.null(db)) {
+        sql <- "SELECT * FROM events WHERE time=(SELECT MAX(time) + 1 FROM U);"
+        return(dbGetQuery(db, sql))
+    }
+
+    events_SIR()
+}
+
+##' Create local node data for the model.
+##'
+##' @template db-param
+##' @importFrom SimInf distance_matrix
+##' @importFrom stats uniroot
+##' @noRd
+create_ldata <- function(db = NULL, beta, gamma) {
+    if (!is.null(db)) {
+        return(dbGetQuery(db, "SELECT * FROM ldata ORDER BY node;"))
+    }
+
+    ldata <- matrix(c(
+        rep(beta, nrow(SimInf::nodes)),  ## beta
+        rep(gamma, nrow(SimInf::nodes)), ## gamma
+        seq_len(nrow(SimInf::nodes)),    ## node
+        SimInf::nodes$x,                 ## x
+        SimInf::nodes$y),                ## y
+        nrow = 5,
+        byrow = TRUE,
+        dimnames = list(c("beta", "gamma", "node", "x", "y"), NULL))
+
+    ## Determine the cutoff for the distance (in meters) for when to
+    ## inlude the interaction from neighbours.
+    k <- 1.76
+    cutoff <- uniroot(f = function(d, k) {
+        K_d_ij(d, k) - 0.01
+    }, interval = c(0, 1e5), k = k)$root
+
+    distance <- distance_matrix(ldata["x", ], ldata["y", ], cutoff = cutoff)
+
+    ## Now we need to re-structure the distance matrix to local data
+    ## available to each node. The reason for this is that every node
+    ## needs to know the index (node identifier) and the spatial
+    ## coupling to all its neigboring nodes. We keep the information
+    ## for each node in a vector with two values for every neighbour:
+    ## (index, distance), (index, distance), ..., (-1, 0). Each vector
+    ## is stored as one column in the ldata matrix. For this
+    ## re-structuring, we will use an internal function in SimInf.
+    rownames_ldata <- rownames(ldata)
+    ldata <- .Call(SimInf:::SimInf_ldata_sp, ldata, distance, 1L)
+    n_neighbours <- (nrow(ldata) - length(rownames_ldata)) / 2
+    rownames(ldata) <- c(
+        rownames_ldata,
+        paste0(c("index", "coupling"), rep(seq_len(n_neighbours), each = 2)))
+
+    ## Recalculate the distance to a coupling.
+    for (j in seq_len(ncol(ldata))) {
+        i <- length(rownames_ldata) + 1
+        repeat {
+            if (ldata[i, j] < 0)
+                break
+            ldata[i + 1, j] <- K_d_ij(ldata[i + 1, j], k)
+            i <- i + 2
+        }
+    }
+
+    ldata
+}
+
+##' Create a SimInf_model object.
+##'
+##' @template db-param
+##' @importFrom SimInf SimInf_model
+##' @noRd
+create_model <- function(db = NULL, beta, gamma) {
+    transitions <- c("S -> beta*S*I/(S+I+R) -> I",
+                     "I -> gamma*I -> R")
+    compartments <- c("S", "I", "R")
+
+    E <- matrix(c(
+        1, 0, 0, 1,  ## S
+        0, 1, 0, 1,  ## I
+        0, 0, 1, 1), ## R
+        nrow = length(compartments),
+        byrow = TRUE,
+        dimnames = list(compartments, NULL))
+
+    G <- matrix(c(
+        1, 1,  ## S -> beta*S*I/(S+I+R) -> I
+        1, 1), ## I -> gamma*I -> R
+        nrow = length(transitions),
+        byrow = TRUE,
+        dimnames = list(transitions, NULL))
+
+    S <- matrix(c(
+        -1,  0,  ## S
+         1, -1,  ## I
+         0,  1), ## R
+        nrow = length(compartments),
+        byrow = TRUE,
+        dimnames = list(compartments, NULL))
+
+    SimInf_model(
+        G      = G,
+        S      = S,
+        E      = E,
+        tspan  = create_tspan(db),
+        events = create_events(db),
+        ldata  = create_ldata(db, beta, gamma),
+        u0     = create_u0(db),
+        v0     = create_v0(db))
+}
+
+##' Create tspan for the model
+##'
+##' @template db-param
+##' @noRd
+create_tspan <- function(db = NULL) {
+    if (!is.null(db)) {
+        sql <- "SELECT MAX(time) + 1 FROM U;"
+        return(as.numeric(dbGetQuery(db, sql)))
+    }
+
+    1
+}
+
+##' Create the initial population
+##'
+##' @template db-param
 ##' @importFrom SimInf u0_SIR
 ##' @noRd
-create_u0 <- function() {
+create_u0 <- function(db = NULL) {
+    if (!is.null(db)) {
+        sql <- "SELECT * FROM U WHERE time=(SELECT max(time) FROM U) ORDER BY node;"
+        u0 <- dbGetQuery(db, sql)
+        u0 <- u0[, -match(c("node", "time", "I_coupling"), colnames(u0)), drop = FALSE]
+        return(u0)
+    }
+
     ## Load the test-population from SimInf.
     u0 <- u0_SIR()
 
@@ -9,6 +148,16 @@ create_u0 <- function() {
     u0$I[sample(seq_len(nrow(u0)), 1)] <- sample(1:10, 1)
 
     u0
+}
+
+create_v0 <- function(db = NULL) {
+    if (!is.null(db)) {
+        sql <- "SELECT I_coupling FROM U WHERE time=(SELECT max(time) FROM U) ORDER BY node;"
+        v0 <- dbGetQuery(db, sql)
+        return(v0)
+    }
+
+    data.frame(I_coupling = rep(0, nrow(create_u0())))
 }
 
 ##' Power-law kernel for the interaction between populations
@@ -23,26 +172,47 @@ K_d_ij <- function(d, k) {
 ##' Initialize an FMD model
 ##'
 ##' @template dbname-param
-##' @importFrom SimInf events_SIR
-##' @importFrom SimInf n_nodes
-##' @importFrom SimInf SIR
+##' @param beta the transmission rate parameter.
+##' @param gamma the recovery rate parameter.
 ##' @export
-init <- function(dbname = "./model.sqlite") {
-    ## Create an SIR model.
-    model <- SIR(u0     = create_u0(),
-                 tspan  = 1,
-                 events = events_SIR(),
-                 beta   = 0.16,
-                 gamma  = 0.077)
+init <- function(dbname = "./model.sqlite", beta = 0.005, gamma = 0.077) {
+    model <- create_model(NULL, beta, gamma)
+    dbWriteModel(model = model, dbname = dbname)
+    invisible(NULL)
+}
 
-    ## Add coordinates for the nodes to ldata.
-    model@ldata <- rbind(model@ldata, node = seq_len(n_nodes(model)))
-    model@ldata <- rbind(model@ldata, x = SimInf::nodes$x)
-    model@ldata <- rbind(model@ldata, y = SimInf::nodes$y)
+##' Simulate one time-step of the disease spread model
+##'
+##' @template dbname-param
+##' @importFrom methods validObject
+##' @export
+##' @useDynLib game.FMD, .registration=TRUE
+run <- function(dbname = "./model.sqlite") {
+    ## Load model
+    model <- dbReadModel(dbname)
 
-    save(model = model, dbname = dbname)
+    ## Run one time-step and save the outcome
+    validObject(model)
+    result <- .Call(game_FMD_run, model, "ssm")
+
+    dbWriteModel(result, dbname = dbname)
 
     invisible(NULL)
+}
+
+##' Load the disease spread model from the database
+##'
+##' @template dbname-param
+##' @importFrom RSQLite dbConnect
+##' @importFrom RSQLite dbDisconnect
+##' @importFrom RSQLite SQLite
+##' @importFrom RSQLite dbGetQuery
+##' @export
+dbReadModel <- function(dbname = "./model.sqlite") {
+    ## Open the database connection
+    con <- dbConnect(SQLite(), dbname = dbname)
+    on.exit(expr = dbDisconnect(con), add = TRUE)
+    create_model(con)
 }
 
 ##' Append or overwrite data in model.sqlite
@@ -55,7 +225,7 @@ init <- function(dbname = "./model.sqlite") {
 ##' @importFrom SimInf trajectory
 ##' @importFrom SimInf events
 ##' @noRd
-save <- function(model, dbname) {
+dbWriteModel <- function(model, dbname) {
     ## Open a database connection
     con <- dbConnect(SQLite(), dbname = dbname)
     on.exit(expr = dbDisconnect(con), add = TRUE)
@@ -67,6 +237,7 @@ save <- function(model, dbname) {
     ## Save the U state
     if (isTRUE(empty)) {
         U <- as.data.frame(t(model@u0))
+        U <- cbind(U, as.data.frame(t(model@v0)))
         U <- cbind(node = seq_len(nrow(U)), time = 0L, U)
         dbWriteTable(con, "U", U, overwrite = TRUE)
     } else {
@@ -87,62 +258,4 @@ save <- function(model, dbname) {
     }
 
     invisible(NULL)
-}
-
-##' Simulate one time-step of the disease spread model
-##'
-##' @template dbname-param
-##' @export
-##' @useDynLib game.FMD, .registration=TRUE
-run <- function(dbname = "./model.sqlite") {
-    ## Load model
-    model <- load(dbname)
-
-    ## Run one time-step and save the outcome
-    validObject(model)
-    result <- .Call(game_FMD_run, model, "ssm")
-
-    save(result, dbname = dbname)
-
-    invisible(NULL)
-}
-
-##' Load the disease spread model from the database
-##'
-##' @template dbname-param
-##' @importFrom RSQLite dbConnect
-##' @importFrom RSQLite dbDisconnect
-##' @importFrom RSQLite SQLite
-##' @importFrom RSQLite dbGetQuery
-##' @importFrom SimInf SIR
-##' @noRd
-load <- function(dbname) {
-    ## Open the database connection
-    con <- dbConnect(SQLite(), dbname = dbname)
-    on.exit(expr = dbDisconnect(con), add = TRUE)
-
-    sql <- "SELECT time FROM U WHERE time=(SELECT max(time) FROM U) LIMIT 1"
-    time <- as.numeric(dbGetQuery(con, sql))
-
-    sql <- "SELECT * FROM U WHERE time=:time ORDER BY node;"
-    u0 <- dbGetQuery(con, sql, params = c(time = time))
-
-    sql <- "SELECT * FROM ldata ORDER BY node;"
-    ldata <- dbGetQuery(con, sql)
-    ldata$node <- as.numeric(ldata$node)
-
-    sql <- "SELECT * FROM events WHERE time=:time;"
-    events <- dbGetQuery(con, sql, params = c(time = time + 1))
-
-    ## Create an SIR model. Note that beta and gamma will be replaced
-    ## when ldata is injected.
-    model <- SIR(u0     = u0,
-                 tspan  = time + 1,
-                 events = events,
-                 beta   = 0,
-                 gamma  = 0)
-
-    model@ldata <- t(as.matrix(ldata))
-
-    model
 }

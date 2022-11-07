@@ -5,11 +5,15 @@
 #define SIMINF_R_INIT R_init_game_FMD
 #define SIMINF_FORCE_SYMBOLS TRUE
 
-/* Offset in integer compartment state vector */
-enum {S, I, R};
+/* Offset in the integer compartment state vector. */
+enum {S, I, R, N_COMPARTMENTS};
 
-/* Offsets in local data (ldata) to parameters in the model */
-enum {BETA, GAMMA};
+/* Offset in the real-valued continuous state vector. */
+enum {I_COUPLING};
+
+/* Offsets in the local data (ldata) vector to parameters in the
+ * model */
+enum {BETA, GAMMA, NODE, X, Y, NEIGHBOUR};
 
 /**
  * susceptible to infected: S -> I
@@ -37,7 +41,7 @@ static double SIR_S_to_I(
     SIMINF_UNUSED(t);
 
     if (n > 0.0)
-        return (ldata[BETA] * S_n * I_n) / n;
+        return (ldata[BETA] * S_n * (I_n + v[I_COUPLING])) / n;
     return 0.0;
 }
 
@@ -89,15 +93,48 @@ static int SIR_post_time_step(
     int node,
     double t)
 {
-    SIMINF_UNUSED(v_new);
-    SIMINF_UNUSED(u);
-    SIMINF_UNUSED(v);
-    SIMINF_UNUSED(ldata);
     SIMINF_UNUSED(gdata);
-    SIMINF_UNUSED(node);
     SIMINF_UNUSED(t);
 
-    return 0;
+   /* Clear the force of infection from neighbouring nodes. Then
+    * iterate over all neighbors and update the value. */
+    v_new[I_COUPLING] = 0.0;
+
+    /* Deterimine the pointer to the compartment state vector in the
+     * first node. Use this to find the number of individuals at
+     * neighbours to the current node. */
+    const int *u_0 = &u[-N_COMPARTMENTS * node];
+
+    /* Variable to keep track of where to look in the neigbours data:
+     * (index, coupling), (index, * coupling), ..., (-1, 0). Start at
+     * the position for the first index. */
+    int i = NEIGHBOUR;
+
+    /* Iterate over all neighbours and add the contributions from
+     * infected individuals. */
+    while ((int)ldata[i] >= 0) {
+        /* Index and coupling to neighbor. */
+        int j = (int)ldata[i];
+        double coupling = ldata[i + 1];
+
+        /* Add the contribution from the infected in node j */
+        v_new[I_COUPLING] += coupling * u_0[j * N_COMPARTMENTS + I];
+
+        /* Move to the next neighbour pair (index, distance) ,i.e.,
+         * move 'i' two steps forward in the ldata vector. */
+        i = i + 2;
+    }
+
+    /* Error check the new I_coupling value. */
+    if (!R_FINITE(v_new[I_COUPLING]))
+        return SIMINF_ERR_V_IS_NOT_FINITE;
+    if (v_new[I_COUPLING] < 0.0)
+        return SIMINF_ERR_V_IS_NEGATIVE;
+
+    /*  Finally, if I_coupling has changed compared to the previous
+     *  value, return 1 to indicate to the numerical solver that the
+     *  transition rates must be updated. */
+    return v[I_COUPLING] != v_new[I_COUPLING];
 }
 
 /**
