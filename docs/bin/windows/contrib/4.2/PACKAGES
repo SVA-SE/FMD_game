@@ -30,3 +30,10 @@ Imports: methods, RSQLite, SimInf(>= 9.3.1), stats
 LinkingTo: SimInf
 License: GPL-3
 Archs: x64
+
+Package: game.FMD
+Version: 2.3
+Imports: methods, RSQLite, SimInf(>= 9.3.1), stats
+LinkingTo: SimInf
+License: GPL-3
+Archs: x64
