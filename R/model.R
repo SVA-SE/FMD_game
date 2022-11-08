@@ -3,13 +3,16 @@
 ##' @template db-param
 ##' @importFrom SimInf events_SIR
 ##' @noRd
-create_events <- function(db = NULL) {
+create_events <- function(db = NULL, index) {
     if (!is.null(db)) {
         sql <- "SELECT * FROM events WHERE time=(SELECT MAX(time) + 1 FROM U);"
         return(dbGetQuery(db, sql))
     }
 
-    events_SIR()
+    events <- events_SIR()
+    if (length(index) < 1600)
+        events <- events[0, ]
+    events
 }
 
 ##' Create local node data for the model.
@@ -18,17 +21,17 @@ create_events <- function(db = NULL) {
 ##' @importFrom SimInf distance_matrix
 ##' @importFrom stats uniroot
 ##' @noRd
-create_ldata <- function(db = NULL, beta, gamma) {
+create_ldata <- function(db = NULL, beta, gamma, index) {
     if (!is.null(db)) {
         return(dbGetQuery(db, "SELECT * FROM ldata ORDER BY node;"))
     }
 
     ldata <- matrix(c(
-        rep(beta, nrow(SimInf::nodes)),  ## beta
-        rep(gamma, nrow(SimInf::nodes)), ## gamma
-        seq_len(nrow(SimInf::nodes)),    ## node
-        SimInf::nodes$x,                 ## x
-        SimInf::nodes$y),                ## y
+        rep(beta, length(index)),  ## beta
+        rep(gamma, length(index)), ## gamma
+        seq_len(length(index)),    ## node
+        SimInf::nodes$x[index],    ## x
+        SimInf::nodes$y[index]),   ## y
         nrow = 5,
         byrow = TRUE,
         dimnames = list(c("beta", "gamma", "node", "x", "y"), NULL))
@@ -76,7 +79,7 @@ create_ldata <- function(db = NULL, beta, gamma) {
 ##' @template db-param
 ##' @importFrom SimInf SimInf_model
 ##' @noRd
-create_model <- function(db = NULL, beta, gamma) {
+create_model <- function(db = NULL, beta, gamma, index) {
     transitions <- c("S -> beta*S*I/(S+I+R) -> I",
                      "I -> gamma*I -> R")
     compartments <- c("S", "I", "R")
@@ -109,10 +112,10 @@ create_model <- function(db = NULL, beta, gamma) {
         S      = S,
         E      = E,
         tspan  = create_tspan(db),
-        events = create_events(db),
-        ldata  = create_ldata(db, beta, gamma),
-        u0     = create_u0(db),
-        v0     = create_v0(db))
+        events = create_events(db, index),
+        ldata  = create_ldata(db, beta, gamma, index),
+        u0     = create_u0(db, index),
+        v0     = create_v0(db, index))
 }
 
 ##' Create tspan for the model
@@ -133,7 +136,7 @@ create_tspan <- function(db = NULL) {
 ##' @template db-param
 ##' @importFrom SimInf u0_SIR
 ##' @noRd
-create_u0 <- function(db = NULL) {
+create_u0 <- function(db = NULL, index) {
     if (!is.null(db)) {
         sql <- "SELECT * FROM U WHERE time=(SELECT max(time) FROM U) ORDER BY node;"
         u0 <- dbGetQuery(db, sql)
@@ -142,7 +145,7 @@ create_u0 <- function(db = NULL) {
     }
 
     ## Load the test-population from SimInf.
-    u0 <- u0_SIR()
+    u0 <- u0_SIR()[index, ]
 
     ## Add between 1--10 infected individuals to a random node.
     u0$I[sample(seq_len(nrow(u0)), 1)] <- sample(1:10, 1)
@@ -150,14 +153,14 @@ create_u0 <- function(db = NULL) {
     u0
 }
 
-create_v0 <- function(db = NULL) {
+create_v0 <- function(db = NULL, index) {
     if (!is.null(db)) {
         sql <- "SELECT I_coupling FROM U WHERE time=(SELECT max(time) FROM U) ORDER BY node;"
         v0 <- dbGetQuery(db, sql)
         return(v0)
     }
 
-    data.frame(I_coupling = rep(0, nrow(create_u0())))
+    data.frame(I_coupling = rep(0, length(index)))
 }
 
 ##' Power-law kernel for the interaction between populations
@@ -174,9 +177,11 @@ K_d_ij <- function(d, k) {
 ##' @template dbname-param
 ##' @param beta the transmission rate parameter.
 ##' @param gamma the recovery rate parameter.
+##' @param n the number of nodes to include in the population.
 ##' @export
-init <- function(dbname = "./model.sqlite", beta = 0.005, gamma = 0.077) {
-    model <- create_model(NULL, beta, gamma)
+init <- function(dbname = "./model.sqlite", beta = 0.005, gamma = 0.077, n = 1600) {
+    index <- sample(seq_len(1600), n)
+    model <- create_model(NULL, beta, gamma, index)
     dbWriteModel(model = model, dbname = dbname)
     invisible(NULL)
 }
