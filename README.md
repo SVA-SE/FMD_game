@@ -21,7 +21,7 @@ An SQLite database in a file that contains the following tables:
 First install the latest version of the package:
 
 ```sh
-Rscript -e "install.packages('game.FMD', repos='https://SVA-SE.github.io/game.FMD')"
+Rscript -e "install.packages('game.FMD', repos=c('https://SVA-SE.github.io/game.FMD', 'https://cloud.r-project.org/'))"
 ```
 
 We need to be able to ask for a clean starting state of the model when
